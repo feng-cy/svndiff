@@ -117,11 +117,11 @@ async function selectDir(which) {
     if (which === 'A') {
       dirA.value = dir
       allFilesA.value = await window.electronAPI.listFiles(dir)
-      filesA.value = allFilesA.value
+      filesA.value = []
     } else {
       dirB.value = dir
       allFilesB.value = await window.electronAPI.listFiles(dir)
-      filesB.value = allFilesB.value
+      filesB.value = []
     }
   }
 }
@@ -211,8 +211,11 @@ async function search() {
 }
 
 function saveHistory() {
+  // 提取目录名称
+  const dirAName = dirA.value.split(/[/\\]/).pop() || dirA.value
+  const dirBName = dirB.value.split(/[/\\]/).pop() || dirB.value
   const record = {
-    label: `${new Date().toLocaleString()} - ${days.value}天 ${author.value || '全部'}`,
+    label: `${dirAName} → ${dirBName} | ${days.value}天 | ${author.value || '全部作者'}`,
     dirA: dirA.value,
     dirB: dirB.value,
     days: days.value,
