@@ -127,8 +127,8 @@ async function selectDir(which) {
 }
 
 function resetView() {
-  filesA.value = allFilesA.value
-  filesB.value = allFilesB.value
+  filesA.value = []
+  filesB.value = []
 }
 
 async function search() {
