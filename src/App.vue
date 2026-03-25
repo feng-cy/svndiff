@@ -42,6 +42,7 @@
             class="file-item"
             :class="{ selected: selectedFile?.fullPath === file.fullPath, hasCommit: file.revision }"
             @click="selectFile(file, 'A')"
+            @contextmenu.prevent="showContextMenu($event, file)"
           >
             <span v-if="file.action" class="action" :class="file.action">{{ file.action }}</span>
             <span class="path">{{ file.path }}</span>
@@ -81,11 +82,20 @@
       </div>
       <div ref="diffContainer" class="diff-container"></div>
     </el-dialog>
+
+    <!-- 右键菜单 -->
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu"
+      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+    >
+      <div class="context-menu-item" @click="copyToRight">复制到目录B</div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import * as monaco from 'monaco-editor'
 
 const dirA = ref('')
@@ -110,6 +120,56 @@ let currentFilePathB = ''
 let lineChanges = []
 const historyList = ref([])
 const selectedHistory = ref(null)
+
+// 右键菜单
+const contextMenu = ref({ visible: false, x: 0, y: 0, file: null })
+
+function showContextMenu(event, file) {
+  if (!dirB.value) {
+    alert('请先选择目录B')
+    return
+  }
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    file
+  }
+}
+
+function hideContextMenu() {
+  contextMenu.value.visible = false
+}
+
+async function copyToRight() {
+  const file = contextMenu.value.file
+  hideContextMenu()
+  if (!file || !dirB.value) return
+
+  const srcPath = file.fullPath
+  const destPath = dirB.value.replace(/\\/g, '/') + '/' + file.path
+  const normalizedDest = destPath.replace(/\//g, '\\')
+
+  const result = await window.electronAPI.copyFile(srcPath, normalizedDest)
+  if (result.success) {
+    // 刷新目录B的文件列表
+    allFilesB.value = await window.electronAPI.listFiles(dirB.value)
+    // 更新右侧显示列表
+    const matchedPaths = new Set(filesA.value.map(f => f.path))
+    filesB.value = allFilesB.value.filter(f => matchedPaths.has(f.path))
+    alert('复制成功: ' + file.path)
+  } else {
+    alert('复制失败: ' + result.error)
+  }
+}
+
+// 点击其他地方关闭右键菜单
+onMounted(() => {
+  document.addEventListener('click', hideContextMenu)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', hideContextMenu)
+})
 
 async function selectDir(which) {
   const dir = await window.electronAPI.selectDirectory()
@@ -445,4 +505,7 @@ function getLanguage(filePath) {
 .file-info { font-size: 12px; color: #666; margin-left: auto; }
 .current-diff-highlight { background: rgba(255, 200, 0, 0.3) !important; }
 .diff-arrow-glyph { background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23ff6600" d="M6 3v4H2v2h4v4l6-5-6-5z"/></svg>') center center no-repeat !important; }
+.context-menu { position: fixed; background: white; border: 1px solid #ccc; box-shadow: 2px 2px 8px rgba(0,0,0,0.2); z-index: 9999; min-width: 150px; }
+.context-menu-item { padding: 10px 15px; cursor: pointer; }
+.context-menu-item:hover { background: #e0e0e0; }
 </style>

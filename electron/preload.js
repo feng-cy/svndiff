@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   getSvnFile: (params) => ipcRenderer.invoke('get-svn-file', params),
   listFiles: (dirPath) => ipcRenderer.invoke('list-files', dirPath),
-  writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content)
+  writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
+  copyFile: (srcPath, destPath) => ipcRenderer.invoke('copy-file', srcPath, destPath)
 })

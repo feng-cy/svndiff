@@ -155,6 +155,20 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
   return true
 })
 
+// 复制文件（自动创建目标目录）
+ipcMain.handle('copy-file', async (event, srcPath, destPath) => {
+  try {
+    const destDir = path.dirname(destPath)
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true })
+    }
+    fs.copyFileSync(srcPath, destPath)
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e.message }
+  }
+})
+
 // 获取目录下所有文件
 ipcMain.handle('list-files', async (event, dirPath) => {
   const files = []
